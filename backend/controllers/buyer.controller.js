@@ -1,7 +1,7 @@
-const dotenv = require('dotenv').config()
+
 const otpGenerator = require("otp-generator");
 const twilio = require("twilio");
-const buyer = require("../models/buyer.model");
+const Buyer = require("../models/buyer.model");
 const jwt = require('jsonwebtoken')
 
 
@@ -33,13 +33,13 @@ const sendOTP = async (req, res) => {
     const otpexpiry = new Date();
     otpexpiry.setMinutes(otpexpiry.getMinutes() + 10);
 
-    let user = await buyer.findOne({ phonenumber });
+    let user = await Buyer.findOne({ phonenumber });
 
     if (user) {
      
-      user = await buyer.findOneAndUpdate(
+      user = await Buyer.findOneAndUpdate(
         { phonenumber },
-        { otp, otpexpiry, isLoggedIn: false },
+        { otp, otpexpiry, isLoggedin: false },
         { new: true }
       );
     } else {
@@ -83,7 +83,7 @@ const verifyOTP = async (req, res) => {
       });
     }
 
-    const user = await buyer.findOne({ phonenumber });
+    const user = await Buyer.findOne({ phonenumber });
 
     if (!user) {
       return res.status(404).json({
@@ -125,16 +125,17 @@ const verifyOTP = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     // Update user status
-    await buyer.findOneAndUpdate(
+    await Buyer.findOneAndUpdate(
       { phonenumber },
-      { isLoggedIn: true, otp: null, otpexpiry: null },
+      { isLoggedin: true, otp: null, otpexpiry: null },
       { new: true }
     );
+
 
     res.status(200).json({
       success: true,
       message: "OTP verified successfully",
-      data: { phonenumber, isLoggedIn: true, role:role },
+      data: { phonenumber, isLoggedin: true, role:role },
     });
   } catch (error) {
     console.error("Error verifying OTP:", error);
@@ -181,7 +182,7 @@ const registerbuyer = async (req, res) => {
         .json({ success: false, message: "Please fill in all required fields." });
     }
 
-    const exists = await buyer.findOne({
+    const exists = await Buyer.findOne({
       $or: [{ username }, { phonenumber }],
     });
     if (exists) {
@@ -190,7 +191,7 @@ const registerbuyer = async (req, res) => {
         .json({ success: false, message: "Username or phone already in use." });
     }
 
-    const newbuyer = new buyer({
+    const newbuyer = new Buyer({
       username,
       role,
       country,
@@ -200,7 +201,7 @@ const registerbuyer = async (req, res) => {
       pincode,
       phonenumber,
       location,
-      isLoggedIn: false,
+      isLoggedin: false,
     });
 
     await newbuyer.save();
@@ -218,6 +219,7 @@ const registerbuyer = async (req, res) => {
     });
   }
 };
+
 
 
 module.exports = {sendOTP,verifyOTP,registerbuyer}

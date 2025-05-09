@@ -1,59 +1,35 @@
-const dotenv = require('dotenv').config()
-const product = require('../models/product.model')
-
-
-const createproduct = async (req, res) => {
+const Product = require("../models/product.model");
+const addProduct = async (req, res) => {
   try {
-    const {
-    //   sellerId,
-      productType,
-      quantity,
-      priceperton,
-      isAvailable
-      
-    } = req.body;
-
-    if (
-    //   !sellerId ||
-      !productType ||
-      !quantity ||
-      !priceperton ||
-      !isAvailable
-    ) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Please fill in all required fields." });
+    const { productType, quantity, priceperton, isAvailable = true } = req.body;
+    if (!productType || !quantity || !priceperton) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide all required fields",
+      });
     }
 
-    // const exists = await product.findOne({ sellerId });
-    // if (exists) {
-    //   return res
-    //     .status(409)
-    //     .json({ success: false, message: "Username or phone already in use." });
-    // }
-
-    const newProduct = new product({
-    //  sellerId,
+    // Create product
+    const productAdded = await Product.create({
+      sellerId: req.user._id,
       productType,
       quantity,
       priceperton,
-      isAvailable
+      isAvailable,
     });
 
-    await newProduct.save();
-
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
-      message: "Product Added successfully.",
-      productType: newProduct.productType,
+      data: productAdded,
     });
   } catch (error) {
-    console.error("Error in createproduct:", error);
-    return res.status(500).json({
+    console.error("Error adding product:", error);
+    res.status(500).json({
       success: false,
-      message: "Server error during productcreation.",
+      message: "Failed to add product",
+      error: error.message,
     });
   }
 };
 
-module.exports = {createproduct}
+module.exports = { addProduct };

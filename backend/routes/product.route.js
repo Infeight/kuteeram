@@ -1,8 +1,11 @@
 const { Router } = require("express");
- const {createproduct} = require('../controllers/product.controller')
+const { addProduct } = require("../controllers/product.controller");
 
- const router = Router();
+const { protectseller, authorize } = require("../middleware/verify.middleware");
 
- router.post('/createproduct', createproduct)
+const router = Router();
+router.use(protectseller);
 
- module.exports = router
+router.post("/createproduct", authorize("seller"), addProduct);
+
+module.exports = router;

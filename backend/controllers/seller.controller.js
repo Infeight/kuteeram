@@ -1,15 +1,12 @@
-const dotenv = require('dotenv').config()
 const otpGenerator = require("otp-generator");
 const twilio = require("twilio");
-const seller = require("../models/seller.model");
-const jwt = require('jsonwebtoken')
-
+const Seller = require("../models/seller.model");
+const jwt = require("jsonwebtoken");
 
 const client = twilio(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN
 );
-
 
 const sendOTP = async (req, res) => {
   try {
@@ -20,7 +17,6 @@ const sendOTP = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Phone number is required" });
     }
-
 
     //otp generation
     const otp = otpGenerator.generate(6, {
@@ -33,19 +29,18 @@ const sendOTP = async (req, res) => {
     const otpexpiry = new Date();
     otpexpiry.setMinutes(otpexpiry.getMinutes() + 10);
 
-    let user = await seller.findOne({ phonenumber });
+    let user = await Seller.findOne({ phonenumber });
 
     if (user) {
-     
-      user = await seller.findOneAndUpdate(
+      user = await Seller.findOneAndUpdate(
         { phonenumber },
-        { otp, otpexpiry, isLoggedIn: false },
+        { otp, otpexpiry, isLoggedin: false },
         { new: true }
       );
     } else {
       res.status(404).json({
         success: false,
-        message: "seller not found",
+        message: "Seller not found",
       });
       return;
     }
@@ -71,7 +66,6 @@ const sendOTP = async (req, res) => {
   }
 };
 
-
 const verifyOTP = async (req, res) => {
   try {
     const { phonenumber, otp } = req.body;
@@ -83,12 +77,12 @@ const verifyOTP = async (req, res) => {
       });
     }
 
-    const user = await seller.findOne({ phonenumber });
+    const user = await Seller.findOne({ phonenumber });
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "seller not found",
+        message: "Seller not found",
       });
     }
 
@@ -126,16 +120,16 @@ const verifyOTP = async (req, res) => {
     });
 
     // Update user status
-    await seller.findOneAndUpdate(
+    await Seller.findOneAndUpdate(
       { phonenumber },
-      { isLoggedIn: true, otp: null, otpexpiry: null },
+      { isLoggedin: true, otp: null, otpexpiry: null },
       { new: true }
     );
 
     res.status(200).json({
       success: true,
       message: "OTP verified successfully",
-      data: { phonenumber, isLoggedIn: true, role:role },
+      data: { phonenumber, isLoggedin: true, role: role },
     });
   } catch (error) {
     console.error("Error verifying OTP:", error);
@@ -146,9 +140,6 @@ const verifyOTP = async (req, res) => {
     });
   }
 };
-
-
-
 
 const registerseller = async (req, res) => {
   try {
@@ -171,7 +162,7 @@ const registerseller = async (req, res) => {
       !role ||
       !ricemillname ||
       !registartionNO ||
-      !country||
+      !country ||
       !state ||
       !district ||
       !city ||
@@ -183,10 +174,13 @@ const registerseller = async (req, res) => {
     ) {
       return res
         .status(400)
-        .json({ success: false, message: "Please fill in all required fields." });
+        .json({
+          success: false,
+          message: "Please fill in all required fields.",
+        });
     }
 
-    const exists = await seller.findOne({
+    const exists = await Seller.findOne({
       $or: [{ username }, { phonenumber }],
     });
     if (exists) {
@@ -195,7 +189,7 @@ const registerseller = async (req, res) => {
         .json({ success: false, message: "Username or phone already in use." });
     }
 
-    const newSeller = new seller({
+    const newSeller = new Seller({
       username,
       role,
       ricemillname,
@@ -207,7 +201,7 @@ const registerseller = async (req, res) => {
       pincode,
       phonenumber,
       location,
-      isLoggedIn: false,
+      isLoggedin: false,
     });
 
     await newSeller.save();
@@ -226,5 +220,4 @@ const registerseller = async (req, res) => {
   }
 };
 
-
-module.exports ={sendOTP,verifyOTP,registerseller}
+module.exports = { sendOTP, verifyOTP, registerseller };
